@@ -1,0 +1,22 @@
+{
+  "orden_input": "marcha paro",
+  "monitor_id_input": 1,
+  "text": [
+    {
+      "step": "i1.png",
+      "action": "clic"
+    },
+    {
+      "step": "i2.png",
+      "action": "clic"
+    },
+    {
+      "step": "i3.png",
+      "action": "texto"
+    },
+    {
+      "step": "i4.png",
+      "action": "clic"
+    }
+  ]
+}
