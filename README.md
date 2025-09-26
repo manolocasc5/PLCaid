@@ -1,15 +1,19 @@
-# 🎯 Proyecto: Automatización basada en visión + entrada de texto/voz
+# PLCaid: Agente de Automatización y Generación de Código SCL
 
-## 🧠 Objetivo
+## 💡 Descripción del Proyecto
 
-Desarrollar un sistema que, dada una orden (escrita o hablada), sea capaz de:
+**PLCaid** es un prototipo de agente de inteligencia artificial diseñado para automatizar la configuración de entornos de PLC y generar código de control en lenguaje SCL (Structured Control Language) basado en instrucciones dadas en lenguaje natural.
 
-1. **Capturar la pantalla**
-2. **Analizarla visualmente** (GPT-4 Vision, manual o API)
-3. **Determinar qué hacer** (clic, escribir, etc.)
-4. **Ejecutar esa acción en pantalla**
+El objetivo es simplificar flujos de trabajo complejos de automatización industrial, como la configuración de TIA Portal, utilizando visión por computadora, bases de datos vectoriales y modelos de lenguaje grande.
 
-Inicialmente trabajamos por **módulos separados** que luego uniremos de forma **manual** y finalmente **automática**.
+## ⚙️ Arquitectura de la Implementación Actual
+
+El proyecto opera bajo un flujo de trabajo **secuencial** que combina dos estrategias de localización de UI:
+
+1.  **Entrada del Usuario:** El usuario introduce una orden por texto o voz a través de la interfaz web de Streamlit.
+2.  **Fase de Navegación Flexible (`steps.json`):** El sistema traduce descripciones de texto (`"Abrir la vista del proyecto"`) a vectores (embeddings) y los busca en **Qdrant** para encontrar la imagen de UI más relevante.
+3.  **Generación de Código:** La orden del usuario se envía a la API de **OpenAI (GPT-4)**, que genera el código SCL optimizado para PLC/HMI.
+4.  **Fase de Ejecución de Código y Finalización (`steps2.json`):** El sistema utiliza rutas de imagen fijas (`../capture/i8.png`) y **PyAutoGUI** para pegar el código SCL en la interfaz y completar los pasos finales (compilar, guardar).
 
 ---
 
@@ -41,80 +45,75 @@ project-root/
 ├── README.md
 └── requirements.txt
 ```
-## ⚙️ Módulos funcionales
 
-1. Entrada
-text_to_steps.py
-Toma una orden en texto y genera una lista de pasos en JSON.
+## 🚀 Visión y Futuras Implementaciones
 
-voice_to_text.py
-Transcribe una orden de voz usando Whisper o similar y guarda .txt.
+Para transformar PLCaid en un agente autónomo y robusto, la hoja de ruta incluye la adopción de arquitecturas de agentes avanzadas y la migración de tareas a modelos locales.
 
-2. Captura de pantalla
-screenshot.py
-Captura la pantalla o permite al usuario seleccionar un área. Guarda .png.
+### 1. Arquitectura Multiagente (LangGraph)
 
-3. Visión artificial (manual con GPT-4V)
-vision_prompt.py
-Proporciona una plantilla de prompt para subir manualmente a ChatGPT.
-El usuario pega luego el JSON de respuesta.
+* **Implementación:** Utilizar un *framework* como **LangGraph** para orquestar agentes especializados.
+* **Valor Añadido:** El sistema pasará de un guion lineal a un flujo dinámico, permitiendo el **manejo inteligente de errores** y la **recuperación autónoma** si un elemento de UI cambia o no aparece.
 
-4. Ejecución automática
-execute_actions.py
-Recibe coordenadas desde un JSON y simula clics o escritura con pyautogui.
+### 2. Migración a LLMs Multimodales y Locales
 
-5. Orquestador (semiautomático / automático)
-orchestrate.py
-Conecta todas las partes en secuencia. Al principio manual, luego automático.
+* **LLMs Multimodales:** Integrar modelos avanzados (GPT-4o / Gemini 1.5 Pro) para un **razonamiento visual** más profundo, permitiendo al agente comprender el contexto de la UI en su totalidad (no solo buscando un elemento específico).
+* **Uso Local:** Evaluar el uso de modelos pequeños y eficientes (e.g., LLaMA 3, Mistral) en local para reducir la latencia, los costos y la dependencia de APIs externas.
 
-## 🔁 Flujo de trabajo modular (manual)
+### 3. Integración de OCR y RAG
 
-Escribir o grabar una orden → input/
+* **Herramientas de OCR (con OpenCV):** Utilizar **OpenCV** y motores de OCR (como Tesseract) para mejorar la **fiabilidad en la lectura de texto pequeño** en la UI, como etiquetas y mensajes de error, complementando al LLM.
+* **RAG (Generación Aumentada con Recuperación):** Extender el uso de **Qdrant** para indexar manuales y documentación de PLC. Esto permitirá que el agente genere código SCL con información actualizada, superando las limitaciones de la fecha de corte de entrenamiento de los LLMs.
 
-Convertir a pasos con text_to_steps.py → parsed_steps/
+---
 
-Capturar pantalla con screenshot.py → screenshots/
+## ⚙️ Instalación y Configuración
 
-Subir imagen + pasos manualmente a GPT-4V → guardar .json en vision_outputs/
+1.  **Clonar el repositorio:**
+    ```bash
+    git clone [URL_DEL_REPOSITORIO]
+    cd PLCaid
+    ```
 
-Ejecutar acciones con execute_actions.py → logs en executions/
+2.  **Crear y activar el entorno virtual:**
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # En Linux/macOS
+    .\.venv\Scripts\activate  # En Windows
+    ```
 
-## 🔧 Requisitos
+3.  **Instalar dependencias:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-Python 3.9+
+4.  **Configurar variables de entorno:**
+    Crea un archivo llamado **`.env`** en la raíz del proyecto y añade tus claves de API y configuraciones de Qdrant:
+    ```env
+    OPENAI_API_KEY="sk-..."
+    GEMINI_API_KEY="AIza..."
+    QDRANT_URL="[Tu URL de Qdrant o 'localhost']"
+    QDRANT_API_KEY="[Tu clave de Qdrant si usas la nube]"
+    COLLECTION_NAME="plc_ui_vectors"
+    ```
 
-Paquetes (instalar con pip install -r requirements.txt)
+5.  **Indexar las imágenes:**
+    Ejecuta el script de indexación para llenar la base de datos de Qdrant con los embeddings de las capturas de UI:
+    ```bash
+    python image_indexer.py
+    ```
 
-pyautogui
+---
 
-openai
+## 🚀 Ejecución del Proyecto
 
-speechrecognition
+Para iniciar la interfaz de usuario:
 
-pydub
+```bash
+streamlit run interface.py
+```
 
-whisper (si se usa entrada por voz)
-
-pillow
-
-## 🧪 Modo debug
-
-Cada módulo puede ejecutarse de forma independiente con la bandera --debug para validar entrada/salida.
-
-bash
-Copiar
-Editar
-python scripts/text_to_steps.py --input input/text_orders/example.txt --debug
-
-## 🚀 Objetivo de integración (semana 2)
-
-La idea es que todo el sistema funcione con un único comando:
-
-bash
-Copiar
-Editar
-python scripts/orchestrate.py --input "Abre Google y busca clima en Madrid"
-Que internamente haga: entrada → pasos → screenshot → GPT → coordenadas → ejecución.
+Una vez iniciada la interfaz, puedes escribir o grabar una orden en lenguaje natural y seleccionar el monitor donde se encuentra el entorno de PLC activo.
 
 ## 📄 Licencia
 MIT – Uso libre para fines de desarrollo, estudio y mejora de automatización con visión + LLM.
